@@ -1,6 +1,6 @@
 import { bcryptAdapter } from '../../config';
 import { UserModel } from '../../data';
-import { CustomError, RegisterUserDto, UserEntity } from '../../domain';
+import { CustomError, LoginUserDto, RegisterUserDto, UserEntity } from '../../domain';
 
 export class AuthService {
     constructor() {}
@@ -31,4 +31,25 @@ export class AuthService {
             throw CustomError.internalServer(`${ error }`);
         }
     } 
+
+    public async loginUser( loginUserDto: LoginUserDto ) {
+        const existUser = await UserModel.findOne({ email: loginUserDto.email });
+
+        if( !existUser ) throw CustomError.badRequest('User not exists.');
+
+        try {
+            const validPassword = bcryptAdapter.compare( loginUserDto.password, existUser.password );
+
+            if( !validPassword ) throw CustomError.badRequest('Password incorrect.')
+
+            const { password, ...userEntity } = UserEntity.fromObject( existUser );
+
+            return {
+                user: userEntity,
+                token: 'ABC'
+            }
+        } catch (error) {
+            throw CustomError.internalServer(`${ error }`);
+        }
+    }
 }
